@@ -1,0 +1,140 @@
+import tkinter as tk
+
+class Application(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Système de Gestion des Visites et de Ticket")
+        self.geometry("600x400")
+
+        self.current_page = None
+        self.ticket_number = 0
+
+        self.create_home_page()
+
+    def create_home_page(self):
+        self.current_page = HomePage(self)
+
+    def create_service_selection_page(self, visitor_type):
+        self.current_page.destroy()
+        self.current_page = ServiceSelectionPage(self, visitor_type)
+
+    def create_confirmation_page(self, visitor_type, service, ticket_number):
+        self.current_page.destroy()
+        self.current_page = ConfirmationPage(self, visitor_type, service, ticket_number)
+
+    def create_processing_page(self, visitor_type, service):
+        self.current_page.destroy()
+        self.current_page = ProcessingPage(self, visitor_type, service, self.ticket_number)
+
+    def generate_ticket(self):
+        self.ticket_number += 1
+        return self.ticket_number
+
+class HomePage(tk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.master = master
+        self.pack()
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.message_label = tk.Label(self, text="Bienvenue !")
+        self.message_label.pack(pady=10)
+        self.create_button("Patient", self.select_patient)
+        self.create_button("Visiteur", self.select_visitor)
+        self.create_button("Demandeur de certificat médical", self.process_certificate)
+
+    def create_button(self, text, command):
+        button = tk.Button(self, text=text, command=command)
+        button.pack()
+
+    def select_patient(self):
+        self.master.create_service_selection_page("Patient")
+
+    def select_visitor(self):
+        self.master.create_service_selection_page("Visiteur")
+
+    def process_certificate(self):
+        self.master.create_processing_page("Demandeur de certificat médical", "Certificat médical")
+
+class ServiceSelectionPage(tk.Frame):
+    def __init__(self, master, visitor_type):
+        super().__init__(master)
+        self.master = master
+        self.visitor_type = visitor_type
+        self.pack()
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.back_button = tk.Button(self, text="Retour à la page d'accueil", command=self.go_to_home_page)
+        self.back_button.pack()
+        self.service_label = tk.Label(self, text=f"Sélectionnez le service pour {self.visitor_type}:")
+        self.service_label.pack(pady=10)
+        self.service_options = ["Urgence", "Service Maternité", "Consultation"]
+        self.service_choice = tk.StringVar(self)
+        self.service_choice.set(self.service_options[0])
+        for service in self.service_options:
+            tk.Radiobutton(self, text=service, variable=self.service_choice, value=service).pack()
+        self.submit_button = tk.Button(self, text="Valider", command=self.submit_selection)
+        self.submit_button.pack(pady=10)
+
+    def go_to_home_page(self):
+        self.master.create_home_page()
+
+    def submit_selection(self):
+        selected_service = self.service_choice.get()
+        ticket_number = self.master.generate_ticket()
+        self.master.create_confirmation_page(self.visitor_type, selected_service, ticket_number)
+
+class ConfirmationPage(tk.Frame):
+    def __init__(self, master, visitor_type, service, ticket_number):
+        super().__init__(master)
+        self.master = master
+        self.visitor_type = visitor_type
+        self.service = service
+        self.ticket_number = ticket_number
+        self.pack()
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.back_button = tk.Button(self, text="Retour à la sélection du service", command=self.go_to_service_selection_page)
+        self.back_button.pack()
+        self.confirmation_label = tk.Label(self, text=f"Confirmation de la sélection pour {self.visitor_type}:")
+        self.confirmation_label.pack(pady=10)
+        tk.Label(self, text=f"Type de visiteur: {self.visitor_type}").pack()
+        tk.Label(self, text=f"Service sélectionné: {self.service}").pack()
+        tk.Label(self, text=f"Numéro de ticket: {self.ticket_number}").pack()
+        self.confirm_button = tk.Button(self, text="Confirmer", command=self.process_selection)
+        self.confirm_button.pack(pady=10)
+
+    def go_to_service_selection_page(self):
+        self.master.create_service_selection_page(self.visitor_type)
+
+    def process_selection(self):
+        self.master.create_processing_page(self.visitor_type, self.service)
+
+class ProcessingPage(tk.Frame):
+    def __init__(self, master, visitor_type, service, ticket_number):
+        super().__init__(master)
+        self.master = master
+        self.visitor_type = visitor_type
+        self.service = service
+        self.ticket_number = ticket_number
+        self.pack()
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.processing_label = tk.Label(self, text="La demande a été prise en compte.")
+        self.processing_label.pack(pady=10)
+        if self.ticket_number:
+            tk.Label(self, text=f"Numéro de ticket: {self.ticket_number}").pack()
+            tk.Label(self, text=f"Service demandé: {self.service}").pack()
+        self.finish_button = tk.Button(self, text="Terminer", command=self.finish)
+        self.finish_button.pack()
+
+    def finish(self):
+        self.master.create_home_page()
+
+if __name__ == "__main__":
+    app = Application()
+    app.mainloop()
